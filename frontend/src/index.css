@@ -1,0 +1,334 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&family=Anton&display=swap');
+
+/* ============ Theme tokens ============ */
+:root,
+[data-theme="dark"] {
+    --bg: #0E0E0E;
+    --bg-2: #141414;
+    --fg: #F2EFEA;
+    --fg-dim: #8A8784;
+    --line: rgba(242, 239, 234, 0.10);
+    --accent: #FF3D00;
+    --accent-2: #00E5FF;
+    --accent-3: #B6FF3D;
+    --neon-hidden: #FF00C8;
+    color-scheme: dark;
+}
+
+[data-theme="light"] {
+    --bg: #F2EFEA;
+    --bg-2: #E6E2DA;
+    --fg: #0E0E0E;
+    --fg-dim: #6E6964;
+    --line: rgba(14, 14, 14, 0.12);
+    --accent: #FF3D00;
+    --accent-2: #0066FF;
+    --accent-3: #00C853;
+    --neon-hidden: #FF00C8;
+    color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+    margin: 0; padding: 0;
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    transition: background-color 0.6s cubic-bezier(0.7, 0, 0.3, 1), color 0.6s cubic-bezier(0.7, 0, 0.3, 1);
+}
+
+body { cursor: auto; }
+@media (hover: none), (pointer: coarse) {
+    body { cursor: auto; }
+}
+
+.font-display {
+    font-family: 'Archivo Black', 'Anton', sans-serif;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+}
+.font-condensed { font-family: 'Anton', sans-serif; letter-spacing: -0.02em; text-transform: uppercase; }
+.font-mono { font-family: 'JetBrains Mono', monospace; }
+
+::selection { background: var(--accent); color: var(--bg); }
+
+/* Lenis */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
+/* Grain overlay */
+.grain {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Cursor */
+.cursor-dot, .cursor-ring {
+    position: fixed; top: 0; left: 0;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 9999px;
+    will-change: transform;
+}
+.cursor-dot {
+    display: none;
+}
+.cursor-ring {
+    width: 44px; height: 44px;
+    border: 1px solid var(--fg);
+    margin: -22px 0 0 -22px;
+    mix-blend-mode: difference;
+    transition: width 0.25s ease, height 0.25s ease, margin 0.25s ease,
+        border-color 0.25s ease, background-color 0.25s ease, opacity 0.25s ease;
+    opacity: 0;
+}
+.cursor-ring.hover-link {
+    opacity: 1;
+    width: 70px; height: 70px;
+    margin: -35px 0 0 -35px;
+    background: var(--fg);
+    border-color: var(--fg);
+    mix-blend-mode: difference;
+}
+.cursor-ring.hover-drag {
+    opacity: 1;
+    width: 90px; height: 90px;
+    margin: -45px 0 0 -45px;
+    border-color: var(--accent);
+    background: rgba(255, 61, 0, 0.18);
+    mix-blend-mode: normal;
+}
+.cursor-ring.hover-spot {
+    opacity: 1;
+    width: 220px; height: 220px;
+    margin: -110px 0 0 -110px;
+    border-color: transparent;
+    background: var(--fg);
+    mix-blend-mode: difference;
+}
+.cursor-label {
+    position: fixed; top: 0; left: 0;
+    pointer-events: none;
+    z-index: 10000;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--bg);
+    background: var(--fg);
+    padding: 4px 8px;
+    border-radius: 999px;
+    transform: translate(-50%, -180%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.cursor-label.show { opacity: 1; }
+.cursor-trail-canvas {
+    position: fixed; inset: 0;
+    z-index: 9997;
+    pointer-events: none;
+    mix-blend-mode: difference;
+}
+
+/* Marquee */
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee-track {
+    display: inline-flex;
+    animation: marquee 24s linear infinite;
+    white-space: nowrap;
+}
+
+/* Konami */
+.chaos-mode {
+    animation: chaos-shake 0.4s infinite;
+    filter: invert(1) hue-rotate(180deg);
+}
+@keyframes chaos-shake {
+    0%, 100% { transform: translate(0,0); }
+    25% { transform: translate(-3px, 2px) rotate(0.3deg); }
+    50% { transform: translate(2px, -2px) rotate(-0.3deg); }
+    75% { transform: translate(-1px, 1px); }
+}
+.chaos-particles {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 9990;
+}
+
+/* Buttons */
+.btn-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 28px;
+    border-radius: 999px;
+    border: 1px solid var(--fg);
+    background: transparent;
+    color: var(--fg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    overflow: hidden;
+    transition: color 0.4s ease;
+}
+.btn-pill::before {
+    content: ""; position: absolute; inset: 0;
+    background: var(--fg);
+    transform: translateY(101%);
+    transition: transform 0.5s cubic-bezier(0.7, 0, 0.3, 1);
+    z-index: -1;
+}
+.btn-pill:hover { color: var(--bg); }
+.btn-pill:hover::before { transform: translateY(0); }
+
+.btn-solid {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 32px;
+    border-radius: 999px;
+    background: var(--fg);
+    color: var(--bg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    border: none;
+    transition: background 0.25s ease, transform 0.25s ease, color 0.25s ease;
+}
+.btn-solid:hover { background: var(--accent); color: var(--fg); transform: translateY(-2px); }
+
+.glass {
+    background: color-mix(in oklab, var(--bg-2) 70%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--line);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--fg) 20%, transparent); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+h1, h2, h3, h4, h5, h6 { margin: 0; line-height: 0.92; }
+
+input, textarea, select {
+    background: transparent; border: none; outline: none;
+    color: var(--fg); font-family: inherit;
+}
+input::placeholder, textarea::placeholder { color: var(--fg-dim); }
+
+/* Underline link */
+.ulink { position: relative; display: inline-block; }
+.ulink::after {
+    content: ""; position: absolute;
+    left: 0; bottom: -3px;
+    width: 100%; height: 1px;
+    background: currentColor;
+    transform-origin: right center; transform: scaleX(1);
+    transition: transform 0.5s cubic-bezier(0.7, 0, 0.3, 1);
+}
+.ulink:hover::after {
+    transform-origin: left center; transform: scaleX(0);
+}
+
+/* Manifesto spotlight reveal — neon hidden text under the dark layer */
+.manifesto-spotlight {
+    position: relative;
+    isolation: isolate;
+}
+.manifesto-spotlight .neon-layer {
+    position: absolute; inset: 0;
+    color: var(--neon-hidden);
+    font-family: inherit; font-size: inherit;
+    line-height: inherit; letter-spacing: inherit;
+    text-transform: inherit;
+    pointer-events: none;
+    -webkit-mask-image: radial-gradient(circle 140px at var(--mx, -200px) var(--my, -200px), black 0%, black 30%, transparent 60%);
+    mask-image: radial-gradient(circle 140px at var(--mx, -200px) var(--my, -200px), black 0%, black 30%, transparent 60%);
+    z-index: 2;
+}
+
+/* Case study modal */
+.case-modal {
+    position: fixed; inset: 0;
+    z-index: 200;
+    background: var(--bg);
+}
+
+/* Hidden draggable junk */
+.junk-piece {
+    position: absolute;
+    width: 80px; height: 80px;
+    pointer-events: auto;
+    cursor: grab;
+    user-select: none;
+}
+
+/* Theme toggle */
+.theme-track {
+    width: 56px; height: 28px;
+    border: 1px solid var(--fg);
+    border-radius: 999px;
+    background: transparent;
+    padding: 2px;
+    position: relative;
+    cursor: pointer;
+}
+.theme-knob {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 22px; height: 22px;
+    border-radius: 999px;
+    background: var(--fg);
+    transition: transform 0.5s cubic-bezier(0.7, 0, 0.3, 1);
+}
+[data-theme="light"] .theme-knob { transform: translateX(28px); }
+
+@media (prefers-reduced-motion: reduce) {
+    .marquee-track { animation: none; }
+}
+
+/* Contact Section Interactive Overlap & 3D Shatter */
+.contact-interactive-container {
+    display: grid;
+    grid-template-areas: "overlap";
+    align-items: center;
+    justify-items: center;
+    width: 100%;
+    position: relative;
+}
+.grid-area-overlap {
+    grid-area: overlap;
+    width: 100%;
+}
+.headline-container {
+    perspective: 1200px;
+    transform-style: preserve-3d;
+    z-index: 10;
+}
+.mega-letter {
+    display: inline-block;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+}
+
