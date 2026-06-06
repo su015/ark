@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&family=Anton&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Syne:wght@800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&family=Anton&display=swap');
+@import url('https://fonts.cdnfonts.com/css/monument-extended');
 
 /* ============ Theme tokens ============ */
 :root,

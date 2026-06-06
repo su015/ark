@@ -37,6 +37,17 @@ export default function HeroPhysics() {
       className="relative w-full overflow-hidden bg-[var(--bg)]"
       style={{ height: "100vh", minHeight: 640 }}
     >
+      {/* Planet Video Background */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover z-[0] pointer-events-none opacity-80 mix-blend-screen"
+      >
+        <source src="/videos/earth_bg.mp4" type="video/mp4" />
+      </video>
+
       {/* Atmospheric grid */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.06] z-[1]">
         <div
@@ -70,15 +81,16 @@ export default function HeroPhysics() {
       <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
         <div 
           style={{
-            fontFamily: "'Archivo Black', sans-serif",
-            fontSize: "clamp(50px, 15vw, 250px)",
+            fontFamily: "'Monument Extended', 'Druk Wide', 'Syne', sans-serif",
+            fontWeight: 900,
+            fontSize: "clamp(40px, 11vw, 180px)",
             color: "#FFFFFF",
             lineHeight: 1,
-            letterSpacing: "-0.02em"
+            letterSpacing: "0.04em"
           }}
         >
           <InteractivePhysicsText 
-            text="ARKETYPE." 
+            text="ARKETYPE" 
             className="pointer-events-auto" 
             containerRef={sectionRef} 
           />

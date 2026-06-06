@@ -48,8 +48,8 @@ function DraggableLetter({
     onDragStateChange(index, true);
   };
 
-  const handleDragEnd = () => {
-    onDragStateChange(index, false);
+  const handleDragEnd = (e, info) => {
+    onDragStateChange(index, false, info?.velocity?.x || 0, info?.velocity?.y || 0);
     if (!letterRef.current) return;
 
     const currentRect = letterRef.current.getBoundingClientRect();
@@ -136,9 +136,9 @@ function DraggableLetter({
           isCollapsed
             ? {
               opacity: 1,
-              color: isComplete ? "inherit" : "rgba(245, 245, 245, 0)",
+              color: isComplete ? "rgba(255, 255, 255, 1)" : "rgba(255, 255, 255, 0)",
               WebkitTextStroke: isComplete
-                ? "0px rgba(245,245,245,0)"
+                ? "0px rgba(255,255,255,0)"
                 : isSnapped
                   ? "2px rgba(0, 194, 255, 1)"
                   : "2px rgba(245,245,245,0.8)",
@@ -154,8 +154,8 @@ function DraggableLetter({
             }
             : {
               opacity: 1,
-              color: "inherit",
-              WebkitTextStroke: "0px rgba(245,245,245,0)",
+              color: "rgba(255, 255, 255, 1)",
+              WebkitTextStroke: "0px rgba(255,255,255,0)",
               filter: "drop-shadow(0px 0px 0px rgba(255,255,255,0))",
             }
         }
@@ -292,7 +292,8 @@ export default function InteractivePhysicsText({
         y: 40,
         vx: 0,
         vy: 0,
-        radius: 40, // Estimated radius for collision
+        width: 80,
+        height: 80,
         isDropped: false,
         isDragging: false,
         isSnapped: false,
@@ -346,6 +347,10 @@ export default function InteractivePhysicsText({
           // Ceiling bound mapped precisely to the top of the section
           b.minY = absoluteTop - rect.top;
 
+          // Store exact dimensions for AABB box collision
+          b.width = rect.width * 1.0;
+          b.height = rect.height * 1.0;
+
           return {
             x: rect.left + rect.width / 2,
             y: rect.top + rect.height / 2,
@@ -373,12 +378,18 @@ export default function InteractivePhysicsText({
     }
   };
 
-  const handleDragStateChange = (index, dragging) => {
+  const handleDragStateChange = (index, dragging, vx = 0, vy = 0) => {
     const b = physicsState.current[index];
     b.isDragging = dragging;
-    // User cannot throw letters. Velocity is always killed when interacting.
-    b.vx = 0;
-    b.vy = 0;
+    
+    // Transfer throw momentum from Framer Motion to custom physics engine
+    if (!dragging) {
+      b.vx = vx * 0.8; // Scale down slightly for better feel
+      b.vy = vy * 0.8;
+    } else {
+      b.vx = 0;
+      b.vy = 0;
+    }
   };
 
   const handleDrop = (index) => {
@@ -405,8 +416,8 @@ export default function InteractivePhysicsText({
     // Cap delta time to prevent tunneling on lag spikes
     const dt = Math.min(delta / 1000, 0.05);
 
-    const gravity = 2500; // Heavy gravity
-    const floorFriction = 0.9; // Slides on the floor
+    const gravity = 1200; // More natural gravity
+    const floorFriction = 0.95; // Slides a bit smoother
 
     // 1. Apply gravity, velocity, and floor bounds
     for (let i = 0; i < bodies.length; i++) {
@@ -453,13 +464,16 @@ export default function InteractivePhysicsText({
         const swayX = Math.sin(timeSec * 1.5 + i * 2) * 20;
         const swayY = Math.cos(timeSec * 1.1 + i * 2) * 10;
 
+        // Apply air friction to settle high-speed throws
+        b.vx *= 0.98;
+        b.vy *= 0.98;
+
         // Smoothly interpolate current velocity towards the desired drift velocity
-        // This gives a beautiful glide when thrown, then it settles back into its drift current
-        b.vx += (b.baseDriftX + swayX - b.vx) * 0.015;
-        b.vy += (b.baseDriftY + swayY - b.vy) * 0.015;
+        b.vx += (b.baseDriftX + swayX - b.vx) * 0.03;
+        b.vy += (b.baseDriftY + swayY - b.vy) * 0.03;
 
         // Hard Bounce Boundaries
-        const bounce = 0.4; // "Littel" bounce back factor
+        const bounce = 0.6; // Bouncier walls
 
         // Left wall bounce
         if (b.x < b.minX) {
@@ -508,24 +522,24 @@ export default function InteractivePhysicsText({
 
           const dx = trueX2 - trueX1;
           const dy = trueY2 - trueY1;
-          const distSq = dx * dx + dy * dy;
-          const minDist = b1.radius + b2.radius;
+          
+          // AABB Box Collision
+          const overlapX = (b1.width / 2 + b2.width / 2) - Math.abs(dx);
+          const overlapY = (b1.height / 2 + b2.height / 2) - Math.abs(dy);
 
-          // If circles intersect
-          if (distSq < minDist * minDist) {
-            let dist, overlap, nx, ny;
+          // If boxes intersect
+          if (overlapX > 0 && overlapY > 0) {
+            let overlap, nx, ny;
 
-            // Fix exact overlap teleport glitch (distSq ~ 0)
-            if (distSq < 0.0001) {
-              dist = 0.01;
-              overlap = minDist;
-              nx = 1;
+            // Resolve along the axis of least penetration
+            if (overlapX < overlapY) {
+              overlap = overlapX;
+              nx = dx > 0 ? 1 : -1;
               ny = 0;
             } else {
-              dist = Math.sqrt(distSq);
-              overlap = minDist - dist;
-              nx = dx / dist;
-              ny = dy / dist;
+              overlap = overlapY;
+              nx = 0;
+              ny = dy > 0 ? 1 : -1;
             }
 
             // Weight resolution based on immovable objects (snapped or dragged)
@@ -536,9 +550,9 @@ export default function InteractivePhysicsText({
             if (weight1 === 0 && weight2 > 0) weight2 = 1.0;
             if (weight2 === 0 && weight1 > 0) weight1 = 1.0;
 
-            // Restore the mathematical cap to prevent explosive teleporting!
-            const correction = Math.min(overlap * 0.3, 8);
-            const stackNudge = Math.abs(nx) < 0.2 ? (Math.random() > 0.5 ? 2 : -2) : 0;
+            // Limit correction per frame for stability
+            const correction = Math.min(overlap * 0.3, 10);
+            const stackNudge = Math.abs(nx) < 0.2 ? (Math.random() > 0.5 ? 1 : -1) : 0;
 
             if (weight1 > 0) {
               b1.x -= (nx * correction * (weight1 / 0.5)) + stackNudge;
@@ -574,8 +588,8 @@ export default function InteractivePhysicsText({
           // Slow, dreamy rotation while floating
           b.motionRotate.set(currentRot + b.vx * dt * 0.05 + Math.sin(time / 1000 + i) * 0.2);
         } else {
-          // Fast tumble while dropping
-          b.motionRotate.set(currentRot + b.vx * dt * 0.3);
+          // Natural tumble while dropping or thrown
+          b.motionRotate.set(currentRot + b.vx * dt * 0.15);
         }
       }
     }
@@ -584,12 +598,14 @@ export default function InteractivePhysicsText({
   return (
     <>
       <motion.div
-        className="fixed pointer-events-none z-[200] px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[#F5F5F5] text-xs font-mono tracking-widest whitespace-nowrap shadow-xl"
+        className="fixed pointer-events-none z-[200] px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[#F5F5F5] text-[10px] tracking-[0.2em] whitespace-nowrap shadow-xl"
         style={{
           x: smoothX,
           y: smoothY,
           left: 15, 
           top: 15,
+          fontFamily: "'Monument Extended', 'Druk Wide', 'Syne', sans-serif",
+          textTransform: "uppercase"
         }}
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ 
